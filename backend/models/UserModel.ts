@@ -50,4 +50,13 @@ const UserSchema = new Schema<UserModelInterface>({
     timestamps: true
 });
 
+UserSchema.set('toJSON', {
+    transform: function (_, obj) {
+        delete obj.password;
+        delete obj.confirmHash;
+        return obj;
+    },
+});
+
+
 export const UserModel = model<UserModelDocumentInterface>('User', UserSchema);
