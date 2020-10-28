@@ -1,8 +1,11 @@
 // @ts-ignore
 import express from 'express';
+//import mongoose from 'mongoose';
+// @ts-ignore
+import jwt from 'jsonwebtoken';
 // @ts-ignore
 import {validationResult} from 'express-validator';
-import {UserModel, UserModelInterface} from '../models/UserModel';
+import {UserModel, UserModelDocumentInterface, UserModelInterface} from '../models/UserModel';
 import {generateMD5} from "../utils/generateHash";
 import {sendEmail} from "../utils/sendEmail";
 import {isValidObjectId} from "../utils/isValidObject";
@@ -83,7 +86,7 @@ class UserController {
                     subject: 'Подтверждение почты Twitter Clone Tutorial',
                     html: `Для того, чтобы подтвердить почту, перейдите <a href="http://localhost:${
                         process.env.PORT || 8888
-                    }/users/verify?hash=${data.confirmHash}">по этой ссылке</a>`,
+                    }/auth/verify?hash=${data.confirmHash}">по этой ссылке</a>`,
                 },
                 (err: Error | null) => {
                     if (err) {
@@ -128,6 +131,42 @@ class UserController {
             } else {
                 res.status(404).json({ status: 'error', message: 'Пользователь не найден' });
             }
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error,
+            });
+        }
+    }
+
+
+    async afterLogin(req: express.Request, res: express.Response): Promise<void> {
+        try {
+            const user = req.user ? (req.user as UserModelDocumentInterface).toJSON() : undefined;
+            res.json({
+                status: 'success',
+                data: {
+                    ...user,
+                    token: jwt.sign({ data: req.user }, process.env.SECRET_KEY || '123', {
+                        expiresIn: '30 days',
+                    }),
+                },
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error,
+            });
+        }
+    }
+
+    async getUserInfo(req: express.Request, res: express.Response): Promise<void> {
+        try {
+            const user = req.user ? (req.user as UserModelDocumentInterface).toJSON() : undefined;
+            res.json({
+                status: 'success',
+                data: user,
+            });
         } catch (error) {
             res.status(500).json({
                 status: 'error',
